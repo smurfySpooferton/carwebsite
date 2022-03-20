@@ -16,6 +16,11 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/services/price")
 public class PricingController {
+    private PricingService pricingService;
+
+    PricingController(PricingService pricingService) {
+        this.pricingService = pricingService;
+    }
 
     /**
      * Gets the price for a requested vehicle.
@@ -25,7 +30,7 @@ public class PricingController {
     @GetMapping
     public Price get(@RequestParam Long vehicleId) {
         try {
-            return PricingService.getPrice(vehicleId);
+            return pricingService.getPrice(vehicleId);
         } catch (PriceException ex) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND, "Price Not Found", ex);

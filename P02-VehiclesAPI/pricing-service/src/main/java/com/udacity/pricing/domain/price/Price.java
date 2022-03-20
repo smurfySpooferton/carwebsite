@@ -43,4 +43,14 @@ public class Price {
     public void setVehicleId(Long vehicleId) {
         this.vehicleId = vehicleId;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Price other = (Price) o;
+        return currency.equals(other.currency) &&
+                price.equals(other.price) &&
+                vehicleId == other.vehicleId;
+    }
 }
