@@ -6,7 +6,7 @@ import org.springframework.cloud.netflix.eureka.server.EnableEurekaServer;
 
 /**
  * Creates a Spring Boot Application to run the Pricing Service.
- * TODO: Convert the application from a REST API to a microservice.
+ * DONE: Convert the application from a REST API to a microservice.
  */
 
 @EnableEurekaServer
