@@ -1,16 +1,5 @@
 package com.udacity.vehicles.api;
 
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import com.udacity.vehicles.client.maps.MapsClient;
 import com.udacity.vehicles.client.prices.PriceClient;
 import com.udacity.vehicles.domain.Condition;
@@ -18,9 +7,8 @@ import com.udacity.vehicles.domain.Location;
 import com.udacity.vehicles.domain.car.Car;
 import com.udacity.vehicles.domain.car.Details;
 import com.udacity.vehicles.domain.manufacturer.Manufacturer;
+import com.udacity.vehicles.service.CarNotFoundException;
 import com.udacity.vehicles.service.CarService;
-import java.net.URI;
-import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,9 +18,20 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.util.Base64Utils;
+
+import java.net.URI;
+import java.util.Collections;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Implements testing of the CarController class.
@@ -58,6 +57,9 @@ public class CarControllerTest {
     @MockBean
     private MapsClient mapsClient;
 
+    @Autowired
+    private CarResourceAssembler assembler;
+
     /**
      * Creates pre-requisites for testing, such as an example car.
      */
@@ -66,6 +68,7 @@ public class CarControllerTest {
         Car car = getCar();
         car.setId(1L);
         given(carService.save(any())).willReturn(car);
+        given(carService.findById(any())).willReturn(car);
         given(carService.findById(any())).willReturn(car);
         given(carService.list()).willReturn(Collections.singletonList(car));
     }
@@ -78,10 +81,12 @@ public class CarControllerTest {
     public void createCar() throws Exception {
         Car car = getCar();
         mvc.perform(
-                post(new URI("/cars"))
-                        .content(json.write(car).getJson())
-                        .contentType(MediaType.APPLICATION_JSON_UTF8)
-                        .accept(MediaType.APPLICATION_JSON_UTF8))
+                        post(new URI("/cars"))
+                                .content(json.write(car).getJson())
+                                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                                .accept(MediaType.APPLICATION_JSON_UTF8)
+                                .header(HttpHeaders.AUTHORIZATION,
+                                        "Basic " + Base64Utils.encodeToString("admin:password".getBytes())))
                 .andExpect(status().isCreated());
     }
 
@@ -91,12 +96,21 @@ public class CarControllerTest {
      */
     @Test
     public void listCars() throws Exception {
-        /**
-         * TODO: Add a test to check that the `get` method works by calling
+        /*
+         * DONE: Add a test to check that the `get` method works by calling
          *   the whole list of vehicles. This should utilize the car from `getCar()`
          *   below (the vehicle will be the first in the list).
          */
-
+        Car car = getCar();
+        car.setId(1L);
+        String expected = "{\"_embedded\":{\"carList\":[{\"id\":1,\"createdAt\":null,\"modifiedAt\":null,\"condition\":\"USED\",\"details\":{\"body\":\"sedan\",\"model\":\"Impala\",\"manufacturer\":{\"code\":101,\"name\":\"Chevrolet\"},\"numberOfDoors\":4,\"fuelType\":\"Gasoline\",\"engine\":\"3.6L V6\",\"mileage\":32280,\"modelYear\":2018,\"productionYear\":2018,\"externalColor\":\"white\"},\"location\":{\"lat\":40.73061,\"lon\":-73.935242,\"address\":null,\"city\":null,\"state\":null,\"zip\":null},\"price\":null,\"_links\":{\"self\":{\"href\":\"http://localhost/cars/1\"},\"cars\":{\"href\":\"http://localhost/cars\"}}}]},\"_links\":{\"self\":{\"href\":\"http://localhost/cars\"}}}";
+        mvc.perform(get(new URI("/cars"))
+                        .content(json.write(car).getJson())
+                        .contentType(MediaType.APPLICATION_JSON_UTF8)
+                        .accept(MediaType.APPLICATION_JSON_UTF8)
+                        .header(HttpHeaders.AUTHORIZATION,
+                                "Basic " + Base64Utils.encodeToString("admin:password".getBytes())))
+                .andExpect(content().string(expected));
     }
 
     /**
@@ -105,10 +119,27 @@ public class CarControllerTest {
      */
     @Test
     public void findCar() throws Exception {
-        /**
-         * TODO: Add a test to check that the `get` method works by calling
+        /*
+         * DONE: Add a test to check that the `get` method works by calling
          *   a vehicle by ID. This should utilize the car from `getCar()` below.
          */
+        Car car = getCar();
+        car.setId(1L);
+        String expected = "{\"id\":1,\"createdAt\":null,\"modifiedAt\":null,\"condition\":\"USED\",\"details\":{\"body\":\"sedan\",\"model\":\"Impala\",\"manufacturer\":{\"code\":101,\"name\":\"Chevrolet\"},\"numberOfDoors\":4,\"fuelType\":\"Gasoline\",\"engine\":\"3.6L V6\",\"mileage\":32280,\"modelYear\":2018,\"productionYear\":2018,\"externalColor\":\"white\"},\"location\":{\"lat\":40.73061,\"lon\":-73.935242,\"address\":null,\"city\":null,\"state\":null,\"zip\":null},\"price\":null,\"_links\":{\"self\":{\"href\":\"http://localhost/cars/1\"},\"cars\":{\"href\":\"http://localhost/cars\"}}}";
+        mvc.perform(get(new URI("/cars/1"))
+                        .contentType(MediaType.APPLICATION_JSON_UTF8)
+                        .accept(MediaType.APPLICATION_JSON_UTF8)
+                        .header(HttpHeaders.AUTHORIZATION,
+                                "Basic " + Base64Utils.encodeToString("admin:password".getBytes())))
+                .andExpect(content().string(expected));
+        given(carService.findById(any())).willThrow(new CarNotFoundException());
+        mvc.perform(get(new URI("/cars/2"))
+                        .content(json.write(car).getJson())
+                        .contentType(MediaType.APPLICATION_JSON_UTF8)
+                        .accept(MediaType.APPLICATION_JSON_UTF8)
+                        .header(HttpHeaders.AUTHORIZATION,
+                                "Basic " + Base64Utils.encodeToString("admin:password".getBytes())))
+                .andExpect(status().isNotFound());
     }
 
     /**
@@ -117,11 +148,17 @@ public class CarControllerTest {
      */
     @Test
     public void deleteCar() throws Exception {
-        /**
-         * TODO: Add a test to check whether a vehicle is appropriately deleted
+        /*
+         * DONE: Add a test to check whether a vehicle is appropriately deleted
          *   when the `delete` method is called from the Car Controller. This
          *   should utilize the car from `getCar()` below.
          */
+        mvc.perform(delete(new URI("/cars/1"))
+                        .contentType(MediaType.APPLICATION_JSON_UTF8)
+                        .accept(MediaType.APPLICATION_JSON_UTF8)
+                        .header(HttpHeaders.AUTHORIZATION,
+                                "Basic " + Base64Utils.encodeToString("admin:password".getBytes())))
+                .andExpect(status().isNoContent());
     }
 
     /**
